@@ -29,12 +29,12 @@ import os, sys
 import numpy as np
 import tensorflow as tf
 import logging
-
+import json
 import dataset_util
 
 flags = tf.app.flags
-flags.DEFINE_string('data_dir', r'C:\Users\PSIML-1.PSIML-1\Desktop\projekti\Image-Captioning\raw_data\train2014', 'Root directory to raw Microsoft COCO dataset.')
-flags.DEFINE_string('set', 'train', 'Convert training set or validation set')
+flags.DEFINE_string('data_dir', 'D:\Image Captioning\data', 'Root directory to raw Microsoft COCO dataset.')
+flags.DEFINE_string('set', 'val', 'Convert training set or validation set')
 flags.DEFINE_string('output_filepath', '', 'Path to output TFRecord')
 flags.DEFINE_bool('shuffle_imgs',True,'whether to shuffle images of coco')
 FLAGS = flags.FLAGS
@@ -49,7 +49,9 @@ def load_coco_dection_dataset(imgs_dir, annotations_filepath, shuffle_img = True
     Return:
         coco_data: list of dictionary format information of each image
     """
+    
     coco = COCO(annotations_filepath)
+
     img_ids = coco.getImgIds() # totally 82783 images
     #cat_ids = coco.getCatIds() # totally 90 catagories, however, the number of categories is not continuous, \
                                # [0,12,26,29,30,45,66,68,69,71,83] are missing, this is the problem of coco dataset.
@@ -66,31 +68,18 @@ def load_coco_dection_dataset(imgs_dir, annotations_filepath, shuffle_img = True
         img_info = {}
 
         img_detail = coco.loadImgs(img_id)[0]
-        # pic_height = img_detail['height']
-        # pic_width = img_detail['width']
 
         ann_ids = coco.getAnnIds(imgIds=img_id)
         anns = coco.loadAnns(ann_ids)
         caps = []
-        #print(anns)
-        
-        for ann in anns:
-            caps.append(ann['caption'].encode('utf-8'))
 
-        img_path = os.path.join(imgs_dir, img_detail['file_name'])
-        im = Image.open(img_path)
-        #print(img_path)
-        im = im.resize((299, 299), Image.BILINEAR)
-        im.save(img_path)
+        for ann in anns:
+            caps.append(ann['caption'])
         
-        # img_bytes = tf.gfile.FastGFile(img_path,'rb').read()
+        img_info['id'] = anns[0]['image_id']
+        img_info['caption'] = caps
         
-        # img_info['id'] = anns[0]['image_id']
-        # img_info['pixel_data'] = img_bytes
-        # img_info['caption'] = caps
-        #print(img_info)
-        #exit()
-        #coco_data.append(img_info)
+        coco_data.append(img_info)
     return coco_data
 
 
@@ -123,8 +112,10 @@ def main(_):
         annotations_filepath = os.path.join(FLAGS.data_dir,'annotations','captions_train2014.json')
         print("Convert coco train file to tf record")
     elif FLAGS.set == "val":
-        imgs_dir = os.path.join(FLAGS.data_dir, 'val2014')
-        annotations_filepath = os.path.join(FLAGS.data_dir,'annotations','captions_val2014.json')
+        imgs_dir = os.path.join(FLAGS.data_dir, 'train2014')
+        #annotations_filepath = os.path.join(FLAGS.data_dir,'annotations','captions_val2014.json')
+        print(os.getcwd())
+        annotations_filepath = '/mnt/d/Image Captioning/data/annotations/captions_val2014.json'
         print("Convert coco val file to tf record")
     else:
         raise ValueError("you must either convert train data or val data")
@@ -132,7 +123,8 @@ def main(_):
     coco_data = load_coco_dection_dataset(imgs_dir,annotations_filepath,shuffle_img=FLAGS.shuffle_imgs)
     total_imgs = len(coco_data)
     # write coco data to tf record
-    img_size = (224, 244)
+    with open('captions.json', 'w') as fp:
+        json.dump(coco_data, fp)
     # with tf.python_io.TFRecordWriter(FLAGS.output_filepath) as tfrecord_writer:
     #     for index, img_data in enumerate(coco_data):
     #         if index % 100 == 0:

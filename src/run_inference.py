@@ -23,25 +23,66 @@ import os
 from PIL import Image
 
 import tensorflow as tf
+from matplotlib import pyplot as plt
 
 import configuration
 import inference_wrapper
 from inference_utils import caption_generator
 from inference_utils import vocabulary
 import utils
+import cv2
+import numpy as np
+import json
+import nltk
 
 FLAGS = tf.flags.FLAGS
 
-tf.flags.DEFINE_string("checkpoint_path", r"C:\Users\PSIML-1.PSIML-1\Desktop\projekti\Image-Captioning\src\train_log",
+tf.flags.DEFINE_string("checkpoint_path", r"D:\Image Captioning\src\train_log",
                        "Model checkpoint file or directory containing a "
                        "model checkpoint file.")
-tf.flags.DEFINE_string("vocab_file", r"C:\Users\PSIML-1.PSIML-1\Desktop\projekti\Image-Captioning\output_data\word_counts.txt", "Text file containing the vocabulary.")
+tf.flags.DEFINE_string("vocab_file", r"D:\Image Captioning\output_data\word_counts.txt", "Text file containing the vocabulary.")
 tf.flags.DEFINE_string("input_files", os.path.join(utils.repo_path, 'output_data\\test-?????-of-00008'),
                        "File pattern or comma-separated list of file patterns "
                        "of image files.")
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
+save_path = r"D:\Image Captioning\output_data\results"
+captions_file = r'src\\captions_val.json'
+
+def preprocess_captions():
+  path = os.path.join(os.getcwd(), captions_file)
+  with tf.gfile.FastGFile(path, "rb") as f:
+    caption_data = json.load(f)
+
+  index = {}
+  for sample in caption_data:
+    index[sample['id']] = sample['caption']
+
+  return  index
+
+def save_image(fpath, true_captions, predicted_captions):
+  img = cv2.imread(fpath, cv2.IMREAD_COLOR)
+
+  #print(img.shape)
+  left_right_ext = 200
+  up_down_ext = 200
+  new_img = np.ones((img.shape[0]+2*up_down_ext, img.shape[1] + 2*left_right_ext, img.shape[2]))*255
+  new_img[up_down_ext:up_down_ext+img.shape[0], left_right_ext:left_right_ext+img.shape[1], :] = img.copy()
+  new_img /= 255
+  
+  font = cv2.FONT_HERSHEY_SIMPLEX
+  if predicted_captions is not None:
+    for i, caption in enumerate(predicted_captions):
+      cv2.putText(new_img, caption, (10, up_down_ext+img.shape[0]+(i+1)*25), font, 0.4, (0, 0, 0), 1)
+  if true_captions is not None:
+    for i, caption in enumerate(true_captions):
+      cv2.putText(new_img, caption, (10, 10+(i+1)*25), font, 0.4, (0, 0, 0), 1)
+
+  new_img = new_img * 255
+  p = os.path.join(save_path, os.path.basename(fpath))
+  print(p)
+  cv2.imwrite(os.path.join(save_path, os.path.basename(fpath)), new_img)
 
 def main(_):
   # Build the inference graph.
@@ -62,6 +103,7 @@ def main(_):
                   len(filenames), FLAGS.input_files)
   config_sess = tf.ConfigProto()
   config_sess.gpu_options.allow_growth = True
+
   with tf.Session(graph=g, config=config_sess) as sess:
     # Load the model from checkpoint.
     restore_fn(sess)
@@ -70,24 +112,29 @@ def main(_):
     # beam search parameters. See caption_generator.py for a description of the
     # available beam search parameters.
     generator = caption_generator.CaptionGenerator(model, vocab)
-    test_path = r'C:\Users\PSIML-1.PSIML-1\Desktop\projekti\Image-Captioning\\test_data\\'
+    test_path = r'D:\Image Captioning\test_data'
     filenames = os.listdir(test_path)
-    for filename in filenames:
-      #print(filename)
-      with tf.gfile.GFile(os.path.join(test_path, filename), "rb") as f:
-        image = f.read()
-        img = Image.open(os.path.join(test_path, filename))
-        img.show()
-        #print(image)
 
+    captions_index = preprocess_captions()
+
+    for filename in filenames:
+      full_fname = os.path.join(test_path, filename)
+      with tf.gfile.GFile(full_fname, "rb") as f:
+        image = f.read()
+      
       captions = generator.beam_search(sess, image)
-      print("Captions for image %s:" % os.path.basename(filename))
+      
+      best_captions = []
       for i, caption in enumerate(captions):
         # Ignore begin and end words.
         sentence = [vocab.id_to_word(w) for w in caption.sentence[1:-1]]
         sentence = " ".join(sentence)
-        print("  %d) %s (p=%f)" % (i, sentence, math.exp(caption.logprob)))
-      #break
+        best_captions.append("  %d) %s (p=%f)\n" % (i, sentence, math.exp(caption.logprob)))
+
+      image_idx = int(filename.split('.')[0].split('_')[2])
+      true_captions = captions_index[image_idx]
+      save_image(full_fname, true_captions, best_captions)
+
 
 if __name__ == "__main__":
   #tf.app.run()
