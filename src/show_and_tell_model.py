@@ -318,6 +318,12 @@ class ShowAndTellModel(object):
       # Add summaries.
       tf.summary.scalar("losses/batch_loss", batch_loss)
       tf.summary.scalar("losses/total_loss", total_loss)
+      gradient = tf.gradients(batch_loss, self.image)
+      gradient = tf.expand_dims(gradient[0], 0)
+      image = tf.expand_dims(self.images[0], 0)
+      tf.summary.image("gradient_vrt_input", gradient)
+      tf.summary.image("input_image_0", image)
+      
       for var in tf.trainable_variables():
         tf.summary.histogram("parameters/" + var.op.name, var)
 
