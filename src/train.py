@@ -23,14 +23,17 @@ import tensorflow as tf
 
 import configuration
 import show_and_tell_model
+import utils
+import os
 
 FLAGS = tf.app.flags.FLAGS
+print(utils.repo_path)
 
-tf.flags.DEFINE_string("input_file_pattern", "D:\Image Captioning\src\data\output\\train-?????-of-00256",
+tf.flags.DEFINE_string("input_file_pattern", os.path.join(utils.repo_path, 'output_data\\train-?????-of-00256'),
                        "File pattern of sharded TFRecord input files.")
-tf.flags.DEFINE_string("inception_checkpoint_file", "D:\Image Captioning\src\data\inception_v3.ckpt",
+tf.flags.DEFINE_string("inception_checkpoint_file", os.path.join(utils.repo_path, 'src\data\inception_v3.ckpt'),
                        "Path to a pretrained inception_v3 model.")
-tf.flags.DEFINE_string("train_dir", "D:\Image Captioning\src\\train_log",
+tf.flags.DEFINE_string("train_dir", os.path.join(utils.repo_path, 'src\\train_log'),
                        "Directory for saving and loading model checkpoints.")
 tf.flags.DEFINE_boolean("train_inception", False,
                         "Whether to train inception submodel variables.")
@@ -39,7 +42,7 @@ tf.flags.DEFINE_integer("log_every_n_steps", 10,
                         "Frequency at which loss and global step are logged.")
 
 tf.logging.set_verbosity(tf.logging.INFO)
-
+print(FLAGS.input_file_pattern)
 
 def main(unused_argv):
   assert FLAGS.input_file_pattern, "--input_file_pattern is required"
@@ -99,6 +102,9 @@ def main(unused_argv):
     saver = tf.train.Saver(max_to_keep=training_config.max_checkpoints_to_keep)
 
   # Run training.
+  config_sess = tf.ConfigProto()
+  config_sess.gpu_options.allow_growth = True
+  
   tf.contrib.slim.learning.train(
       train_op,
       train_dir,
@@ -107,7 +113,8 @@ def main(unused_argv):
       global_step=model.global_step,
       number_of_steps=FLAGS.number_of_steps,
       init_fn=model.init_fn,
-      saver=saver)
+      saver=saver,
+      session_config=config_sess)
 
 
 if __name__ == "__main__":

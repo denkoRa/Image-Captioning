@@ -107,10 +107,10 @@ def process_image(encoded_image,
 
   # Resize image.
   #assert (resize_height > 0) == (resize_width > 0)
-  if resize_height:
-    image = tf.image.resize_images(image,
-                                   size=[resize_height, resize_width],
-                                   method=tf.image.ResizeMethod.BILINEAR)
+  #if resize_height:
+    # image = tf.image.resize_images(image,
+    #                                size=[resize_height, resize_width],
+    #                                method=tf.image.ResizeMethod.BILINEAR)
 
   # Crop to final dimensions.
   if is_training:

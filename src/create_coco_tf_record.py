@@ -33,7 +33,7 @@ import logging
 import dataset_util
 
 flags = tf.app.flags
-flags.DEFINE_string('data_dir', '', 'Root directory to raw Microsoft COCO dataset.')
+flags.DEFINE_string('data_dir', r'C:\Users\PSIML-1.PSIML-1\Desktop\projekti\Image-Captioning\raw_data\train2014', 'Root directory to raw Microsoft COCO dataset.')
 flags.DEFINE_string('set', 'train', 'Convert training set or validation set')
 flags.DEFINE_string('output_filepath', '', 'Path to output TFRecord')
 flags.DEFINE_bool('shuffle_imgs',True,'whether to shuffle images of coco')
@@ -80,7 +80,7 @@ def load_coco_dection_dataset(imgs_dir, annotations_filepath, shuffle_img = True
         img_path = os.path.join(imgs_dir, img_detail['file_name'])
         im = Image.open(img_path)
         #print(img_path)
-        im = im.resize((346, 346))
+        im = im.resize((299, 299), Image.BILINEAR)
         im.save(img_path)
         
         # img_bytes = tf.gfile.FastGFile(img_path,'rb').read()

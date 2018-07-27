@@ -101,17 +101,17 @@ import numpy as np
 from six.moves import xrange
 import tensorflow as tf
 
-tf.flags.DEFINE_string("train_image_dir", "D:\Image Captioning\data\\train2014",
+tf.flags.DEFINE_string("train_image_dir", r"C:\Users\PSIML-1.PSIML-1\Desktop\projekti\Image-Captioning\raw_data\\train2014",
                        "Training image directory.")
-tf.flags.DEFINE_string("val_image_dir", "D:\Image Captioning\data\\val2014",
+tf.flags.DEFINE_string("val_image_dir", "D:\Image Captioning\\raw_data\\val2014",
                        "Validation image directory.")
 
-tf.flags.DEFINE_string("train_captions_file", "D:\Image Captioning\data\\annotations\captions_train2014.json",
+tf.flags.DEFINE_string("train_captions_file", r"C:\Users\PSIML-1.PSIML-1\Desktop\projekti\Image-Captioning\raw_data\annotations\captions_train2014.json",
                        "Training captions JSON file.")
 tf.flags.DEFINE_string("val_captions_file", "/tmp/captions_val2014.json",
                        "Validation captions JSON file.")
 
-tf.flags.DEFINE_string("output_dir", "D:\Image Captioning\src\data\output", "Output data directory.")
+tf.flags.DEFINE_string("output_dir", r"C:\Users\PSIML-1.PSIML-1\Desktop\projekti\Image-Captioning\output_data", "Output data directory.")
 
 tf.flags.DEFINE_integer("train_shards", 256,
                         "Number of shards in training TFRecord files.")
@@ -129,7 +129,7 @@ tf.flags.DEFINE_string("unknown_word", "<UNK>",
 tf.flags.DEFINE_integer("min_word_count", 4,
                         "The minimum number of occurrences of each word in the "
                         "training set for inclusion in the vocabulary.")
-tf.flags.DEFINE_string("word_counts_output_file", "D:\Image Captioning\src\data\output\word_counts.txt",
+tf.flags.DEFINE_string("word_counts_output_file", r"C:\Users\PSIML-1.PSIML-1\Desktop\projekti\Image-Captioning\output_data\word_counts.txt",
                        "Output vocabulary file of word counts.")
 
 tf.flags.DEFINE_integer("num_threads", 8,
