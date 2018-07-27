@@ -26,4 +26,8 @@ output_data/*
 
 raw_data/*
 
+eval_dir/*
+
+test_data/*
+
 .idea/*

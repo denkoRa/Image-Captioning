@@ -325,6 +325,22 @@ class ShowAndTellModel(object):
       self.target_cross_entropy_losses = losses  # Used in evaluation.
       self.target_cross_entropy_loss_weights = weights  # Used in evaluation.
 
+  # def build_model(self):
+  #   """Builds the model.
+
+  #   Inputs:
+  #     self.image_embeddings
+  #     self.seq_embeddings
+  #     self.target_seqs (training and eval only)
+  #     self.input_mask (training and eval only)
+
+  #   Outputs:
+  #     self.total_loss (training and eval only)
+  #     self.target_cross_entropy_losses (training and eval only)
+  #     self.target_cross_entropy_loss_weights (training and eval only)
+  #   """
+    
+
   def setup_inception_initializer(self):
     """Sets up the function to restore inception variables from checkpoint."""
     if self.mode != "inference":
@@ -354,5 +370,6 @@ class ShowAndTellModel(object):
     self.build_image_embeddings()
     self.build_seq_embeddings()
     self.build_model()
+    #self.build_rnn_model()
     self.setup_inception_initializer()
     self.setup_global_step()

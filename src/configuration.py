@@ -56,7 +56,7 @@ class ModelConfig(object):
     self.num_preprocess_threads = 4
 
     # Batch size.
-    self.batch_size = 32
+    self.batch_size = 64
 
     # File containing an Inception v3 checkpoint to initialize the variables
     # of the Inception model. Must be provided when starting training for the
@@ -76,6 +76,7 @@ class ModelConfig(object):
 
     # If < 1.0, the dropout keep probability applied to LSTM variables.
     self.lstm_dropout_keep_prob = 0.7
+    self.lstm_input_size = 15
 
 
 class TrainingConfig(object):
