@@ -35,19 +35,23 @@ import numpy as np
 import json
 import nltk
 
+import matplotlib.pyplot as plt
+import skimage.transform
+from scipy import ndimage
+
 FLAGS = tf.flags.FLAGS
 
-tf.flags.DEFINE_string("checkpoint_path", r"D:\Image Captioning\src\train_log",
+tf.flags.DEFINE_string("checkpoint_path", r"C:\Users\PSIML-1.PSIML-1\Desktop\projekti\Image-Captioning\src\train_log",
                        "Model checkpoint file or directory containing a "
                        "model checkpoint file.")
-tf.flags.DEFINE_string("vocab_file", r"D:\Image Captioning\output_data\word_counts.txt", "Text file containing the vocabulary.")
+tf.flags.DEFINE_string("vocab_file", r"C:\Users\PSIML-1.PSIML-1\Desktop\projekti\Image-Captioning\output_data\word_counts.txt", "Text file containing the vocabulary.")
 tf.flags.DEFINE_string("input_files", os.path.join(utils.repo_path, 'output_data\\test-?????-of-00008'),
                        "File pattern or comma-separated list of file patterns "
                        "of image files.")
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
-save_path = r"D:\Image Captioning\output_data\results"
+save_path = r"C:\Users\PSIML-1.PSIML-1\Desktop\projekti\Image-Captioning\output_data\results"
 captions_file = r'src\\captions_val.json'
 
 def preprocess_captions():
@@ -84,6 +88,22 @@ def save_image(fpath, true_captions, predicted_captions):
   print(p)
   cv2.imwrite(os.path.join(save_path, os.path.basename(fpath)), new_img)
 
+
+def plot_image(fpath, true_captions, predicted_captions, n):
+  img = ndimage.imread(fpath)
+  fig = plt.figure(figsize=(20, 20))
+  plt.subplot(2, 1, 1)
+  plt.imshow(img)
+  plt.axis('off')
+
+  i = 0
+  for t in (predicted_captions):
+      i += 1
+      plt.text( 5,  i * 10, '%s'%(t) , color='black', backgroundcolor='white', fontsize=8)
+  plt.show()
+  fig.savefig('res_image{0}.png'.format(str(n)))
+
+
 def main(_):
   # Build the inference graph.
   g = tf.Graph()
@@ -106,17 +126,18 @@ def main(_):
 
   with tf.Session(graph=g, config=config_sess) as sess:
     # Load the model from checkpoint.
+    
     restore_fn(sess)
 
     # Prepare the caption generator. Here we are implicitly using the default
     # beam search parameters. See caption_generator.py for a description of the
     # available beam search parameters.
     generator = caption_generator.CaptionGenerator(model, vocab)
-    test_path = r'D:\Image Captioning\test_data'
+    test_path = r'C:\Users\PSIML-1.PSIML-1\Desktop\projekti\Image-Captioning\test_data'
     filenames = os.listdir(test_path)
 
-    captions_index = preprocess_captions()
-
+    #captions_index = preprocess_captions()
+    j = 0
     for filename in filenames:
       full_fname = os.path.join(test_path, filename)
       with tf.gfile.GFile(full_fname, "rb") as f:
@@ -132,8 +153,10 @@ def main(_):
         best_captions.append("  %d) %s (p=%f)\n" % (i, sentence, math.exp(caption.logprob)))
 
       image_idx = int(filename.split('.')[0].split('_')[2])
-      true_captions = captions_index[image_idx]
-      save_image(full_fname, true_captions, best_captions)
+      #true_captions = captions_index[image_idx]
+      
+      plot_image(full_fname, None, best_captions, j)
+      j += 1
 
 
 if __name__ == "__main__":

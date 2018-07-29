@@ -276,7 +276,9 @@ class ShowAndTellModel(object):
         lstm_outputs, state_tuple = lstm_cell(
             inputs=tf.squeeze(self.seq_embeddings, axis=[1]),
             state=state_tuple)
-
+        print(lstm_outputs)
+        self.gradient_wrt_image = tf.gradients(lstm_outputs, self.images, name='xyz')
+        print(self.gradient_wrt_image)
         # Concatentate the resulting state.
         tf.concat(axis=1, values=state_tuple, name="state")
       else:
@@ -318,11 +320,42 @@ class ShowAndTellModel(object):
       # Add summaries.
       tf.summary.scalar("losses/batch_loss", batch_loss)
       tf.summary.scalar("losses/total_loss", total_loss)
-      gradient = tf.gradients(batch_loss, self.image)
-      gradient = tf.expand_dims(gradient[0], 0)
-      image = tf.expand_dims(self.images[0], 0)
-      tf.summary.image("gradient_vrt_input", gradient)
-      tf.summary.image("input_image_0", image)
+      print(lstm_outputs)
+      print(self.images)
+      self.gradient = tf.gradients(lstm_outputs, self.images, name="xyz")
+      print(self.gradient)
+
+      
+      # gradient = tf.gradients(batch_loss, self.images)
+      # print(gradient)
+      # print("***************************************")
+      # gradient = tf.slice(gradient, [0, 0, 0, 0, 0], [1, 1, -1, -1, 3])
+      # gradient = tf.squeeze(gradient, axis=0)
+      # tf.summary.scalar("gradient_max_srdjan_before", tf.reduce_max(gradient))
+      # tf.summary.scalar("gradient_min_srdjan_before", tf.reduce_min(gradient))
+      # gradient_min_s = tf.reduce_min(gradient)
+      # gradient_max_s = tf.reduce_max(gradient)
+      # gradient = tf.subtract(tf.constant(1, dtype=tf.float32), tf.divide(tf.subtract(gradient, gradient_min_s), tf.subtract(gradient_max_s, gradient_min_s)))
+
+      # gradient_0 = tf.slice(gradient, [0, 0, 0, 0], [1, -1, -1, 1])
+      # print("gradient_0: ", gradient_0)
+      # gradient_1 = tf.slice(gradient, [0, 0, 0, 1], [1, -1, -1, 1])
+      # gradient_2 = tf.slice(gradient, [0, 0, 0, 2], [1, -1, -1, 1])
+      # #gradient = tf.clip_by_value(gradient, clip_value_min=-1, clip_value_max=1, name=None)
+      # #gradient = tf.subtract(tf.constant(1, dtype=tf.float32), tf.multiply(tf.constant(0.5, dtype=tf.float32), tf.add(gradient, tf.constant(1, dtype=tf.float32))))
+      # tf.summary.scalar("gradient_max_srdjan", tf.reduce_max(gradient))
+      # tf.summary.scalar("gradient_min_srdjan", tf.reduce_min(gradient))
+      # print("max shape: ", tf.reduce_min(gradient).shape)
+      # print("sliced: ", gradient)
+      # # #gradient = tf.expand_dims(gradient[0, :, :, :], 0)
+      # # print("slice gradient: ", gradient)
+      # image = tf.slice(self.images, [0, 0, 0, 0], [1, -1, -1, 3])
+      # print("image slice: ", image)
+      # tf.summary.image("gradient_vrt_input_0", gradient_0)
+      # tf.summary.image("gradient_vrt_input_1", gradient_1)
+      # tf.summary.image("gradient_vrt_input_2", gradient_2)
+      # tf.summary.image("gradient_vrt_input", gradient)
+      # tf.summary.image("input_image_0", image)
       
       for var in tf.trainable_variables():
         tf.summary.histogram("parameters/" + var.op.name, var)
