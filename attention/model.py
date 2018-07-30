@@ -186,6 +186,8 @@ class CaptionGenerator(object):
             logits = self._decode_lstm(x, h, context, reuse=(t!=0))
             sampled_word = tf.argmax(logits, 1)
             sampled_word_list.append(sampled_word)
+            if sampled_word == '.':
+                break
 
         alphas = tf.transpose(tf.stack(alpha_list), (1, 0, 2))     # (N, T, L)
         betas = tf.transpose(tf.squeeze(beta_list), (1, 0))    # (N, T)

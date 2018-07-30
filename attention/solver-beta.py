@@ -98,36 +98,46 @@ class CaptioningSolver(object):
             start_t = time.time()
 
             for e in range(self.n_epochs):
-                rand_idxs = np.random.permutation(n_examples)
-                captions = captions[rand_idxs]
-                image_idxs = image_idxs[rand_idxs]
+                perm = np.random.permutation(40)
+                for j in range(40):
+                    self.data = load_coco_data(data_path='./data', split='train', j=perm[j])
+                    features = self.data['features']
+                    captions = self.data['captions']
+                    image_idxs = self.data['image_idxs']
+                    val_features = self.val_data['features']
+                    n_examples = self.data['features'].shape[0]
+                    n_iters_per_epoch = int(np.ceil(float(n_examples)/self.batch_size))
+                    rand_idxs = np.random.permutation(n_examples)
+                    captions = captions[rand_idxs]
+                    image_idxs = image_idxs[rand_idxs]
+                    bulk_loss = 0
+                    for i in range(n_iters_per_epoch):
+                        captions_batch = captions[i*self.batch_size:(i+1)*self.batch_size]
+                        image_idxs_batch = image_idxs[i*self.batch_size:(i+1)*self.batch_size]
+                        features_batch = features[image_idxs_batch]
+                        feed_dict = {self.model.features: features_batch, self.model.captions: captions_batch}
+                        _, l = sess.run([train_op, loss], feed_dict)
+                        curr_loss += l
+                        bulk_loss += l
+                        # write summary for tensorboard visualization
+                        if i % 10 == 0:
+                            summary = sess.run(summary_op, feed_dict)
+                            summary_writer.add_summary(summary, e*n_iters_per_epoch + i)
 
-                for i in range(n_iters_per_epoch):
-                    captions_batch = captions[i*self.batch_size:(i+1)*self.batch_size]
-                    image_idxs_batch = image_idxs[i*self.batch_size:(i+1)*self.batch_size]
-                    features_batch = features[image_idxs_batch]
-                    feed_dict = {self.model.features: features_batch, self.model.captions: captions_batch}
-                    _, l = sess.run([train_op, loss], feed_dict)
-                    curr_loss += l
-
-                    # write summary for tensorboard visualization
-                    if i % 10 == 0:
-                        summary = sess.run(summary_op, feed_dict)
-                        summary_writer.add_summary(summary, e*n_iters_per_epoch + i)
-
-                    if (i+1) % self.print_every == 0:
-                        print ("\nTrain loss at epoch %d & iteration %d (mini-batch): %.5f" %(e+1, i+1, l))
-                        ground_truths = captions[image_idxs == image_idxs_batch[0]]
-                        decoded = decode_captions(ground_truths, self.model.idx_to_word)
-                        for j, gt in enumerate(decoded):
-                            print ("Ground truth %d: %s" %(j+1, gt))
-                        gen_caps = sess.run(generated_captions, feed_dict)
-                        decoded = decode_captions(gen_caps, self.model.idx_to_word)
-                        print( "Generated caption: %s\n" %decoded[0])
-
+                        if (i+1) % self.print_every == 0:
+                            print ("\nTrain loss at epoch %d & iteration %d (mini-batch): %.5f" %(e+1, i+1, l))
+                            ground_truths = captions[image_idxs == image_idxs_batch[0]]
+                            decoded = decode_captions(ground_truths, self.model.idx_to_word)
+                            for j, gt in enumerate(decoded):
+                                print ("Ground truth %d: %s" %(j+1, gt))
+                            gen_caps = sess.run(generated_captions, feed_dict)
+                            decoded = decode_captions(gen_caps, self.model.idx_to_word)
+                            print( "Generated caption: %s\n" %decoded[0])
+                    print("Finished bulk no. %s / %s" %(str(perm[j]), str(j)))
+                    print("Bulk loss = %s" %(str(bulk_loss)))
                 print ("Previous epoch loss: ", prev_loss)
                 print ("Current epoch loss: ", curr_loss)
-                #print ("Elapsed time: ", time.time() - start_t)
+                print ("Elapsed time: ", time.time() - start_t)
                 prev_loss = curr_loss
                 curr_loss = 0
 
@@ -139,7 +149,7 @@ class CaptioningSolver(object):
     def test(self, data, split='train', attention_visualization=True, save_sampled_captions=True):
         features = data['features']
         
-        alphas, betas, sampled_captions = self.model.build_sampler(max_len=15)    # (N, max_len, L), (N, max_len)
+        alphas, betas, sampled_captions = self.model.build_sampler(max_len=20)    # (N, max_len, L), (N, max_len)
         
         config = tf.ConfigProto(allow_soft_placement=True)
         config.gpu_options.allow_growth = True
@@ -153,7 +163,7 @@ class CaptioningSolver(object):
             decoded = decode_captions(sam_cap, self.model.idx_to_word)
 
             if attention_visualization:
-                for n in range(len(image_files)):
+                for n in range(5):
                     print("Sampled Caption: %s" %decoded[n])
 
                     # Plot original image
@@ -169,12 +179,21 @@ class CaptioningSolver(object):
                         if t > 18:
                             break
                         plt.subplot(4, 5, t+2)
-                        plt.text(0, 1, '%s'%(words[t]) , color='black', backgroundcolor='white', fontsize=14)
+                        plt.text(0, 1, '%s(%.2f)'%(words[t], bts[n,t]) , color='black', backgroundcolor='white', fontsize=8)
                         plt.imshow(img)
                         alp_curr = alps[n,t,:].reshape(14,14)
                         alp_img = skimage.transform.pyramid_expand(alp_curr, upscale=16, sigma=20)
                         plt.imshow(alp_img, alpha=0.85)
                         plt.axis('off')
-                    #plt.show()
-                    fig.savefig('results_model_2/res{0}.png'.format(str(n)))
+                    plt.show()
+                    fig.savefig('proba{0}.png'.format(str(n)))
 
+            if save_sampled_captions:
+                all_sam_cap = np.ndarray((features.shape[0], 20))
+                num_iter = int(np.ceil(float(features.shape[0]) / self.batch_size))
+                for i in range(num_iter):
+                    features_batch = features[i*self.batch_size:(i+1)*self.batch_size]
+                    feed_dict = { self.model.features: features_batch }
+                    all_sam_cap[i*self.batch_size:(i+1)*self.batch_size] = sess.run(sampled_captions, feed_dict)
+                all_decoded = decode_captions(all_sam_cap, self.model.idx_to_word)
+                save_pickle(all_decoded, "./data/%s/%s.candidate.captions.pkl" %(split,split))

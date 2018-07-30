@@ -133,12 +133,12 @@ def main():
     train_dataset = _process_caption_data(caption_file='data/annotations/captions_train2014.json',
                                           image_dir=r'C:\Users\PSIML-1.PSIML-1\Desktop\projekti\Image-Captioning\attention\image\train2014_resized',
                                           max_length=max_length,
-                                          max_count = 80000 * 5)
+                                          max_count = 20000 * 5)
 
     val_dataset = _process_caption_data(caption_file='data/annotations/captions_val2014.json',
                                         image_dir=r'C:\Users\PSIML-1.PSIML-1\Desktop\projekti\Image-Captioning\attention\image\val2014_resized',
                                         max_length=max_length,
-                                        max_count = 4000 * 5)
+                                        max_count = 3000 * 5)
 
     val_cutoff = int(0.1 * len(val_dataset))
     test_cutoff = int(0.2 * len(val_dataset))
@@ -184,34 +184,30 @@ def main():
     config_sess.gpu_options.allow_growth = True
     with tf.Session(config=config_sess) as sess:
         tf.initialize_all_variables().run()
-        for split in ['train', 'val', 'test']:
+        #for split in ['train', 'val', 'test']:
+        for split in ['val']:
             anno_path = './data/%s/%s.annotations.pkl' % (split, split)
             save_path = './data/%s/%s.features.hkl' % (split, split)
             annotations = load_pickle(anno_path)
             image_path = list(annotations['file_name'].unique())
-            # n_examples = len(image_path)
-            # n_examples = n_examples - n_examples % batch_size
-            n_examples = 5000
+            n_examples = len(image_path)
+            n_examples = n_examples - n_examples % batch_size
+            
             all_feats = np.ndarray([n_examples, 196, 512], dtype=np.float32)
 
-            for j in range(40):
-                save_path = './data/%s/%s%s.features.hkl' % (split,  split, str(j))
-                print(save_path)
-                for start, end in zip(range(j * n_examples, (j + 1) * n_examples, batch_size),
-                                    range(batch_size + j * n_examples, (j + 1) * n_examples + batch_size, batch_size)):
-                    
-                    image_batch_file = image_path[start:end]
-                    image_batch = np.zeros((batch_size, 224, 224, 3), dtype=np.float32)
-                    for i, filename in enumerate(image_batch_file):
-                        image_batch[i, :, :, :] = ndimage.imread(filename, mode='RGB')
-                    feats = sess.run(vggnet.features, feed_dict={vggnet.images: image_batch})
-                    print ('%d %d' %(start, end))
-                    all_feats[start-(n_examples*j):end-(n_examples*j), :] = feats
-                    #print ("Processed %d %s features.." % (end, split))
-                # use hickle to save huge feature vectors
-                hickle.dump(all_feats, save_path)
-                print ("Saved %s.." % (save_path))
-                if split in ['val', 'test']:
+            for start, end in zip(range(0, n_examples, batch_size),
+                                range(batch_size, n_examples + batch_size, batch_size)):              
+                image_batch_file = image_path[start:end]
+                image_batch = np.zeros((batch_size, 224, 224, 3), dtype=np.float32)
+                for i, filename in enumerate(image_batch_file):
+                    image_batch[i, :, :, :] = ndimage.imread(filename, mode='RGB')
+                feats = sess.run(vggnet.features, feed_dict={vggnet.images: image_batch})
+                all_feats[start:end, :] = feats
+                print ("Processed %d %s features.." % (end, split))
+            # use hickle to save huge feature vectors
+            hickle.dump(all_feats, save_path)
+            print ("Saved %s.." % (save_path))
+            if split in ['val', 'test']:
                     break
 
 

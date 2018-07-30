@@ -99,9 +99,9 @@ def plot_image(fpath, true_captions, predicted_captions, n):
   i = 0
   for t in (predicted_captions):
       i += 1
-      plt.text( 5,  i * 10, '%s'%(t) , color='black', backgroundcolor='white', fontsize=8)
-  plt.show()
-  fig.savefig('res_image{0}.png'.format(str(n)))
+      plt.text( 5,  i * 14, '%s'%(t) , color='black', backgroundcolor='white', fontsize=14)
+  #plt.show()
+  fig.savefig('results_model_1/res_image{0}.png'.format(str(n)))
 
 
 def main(_):
@@ -150,9 +150,9 @@ def main(_):
         # Ignore begin and end words.
         sentence = [vocab.id_to_word(w) for w in caption.sentence[1:-1]]
         sentence = " ".join(sentence)
-        best_captions.append("  %d) %s (p=%f)\n" % (i, sentence, math.exp(caption.logprob)))
+        best_captions.append("  %d) %s\n" % (i, sentence))
 
-      image_idx = int(filename.split('.')[0].split('_')[2])
+      #image_idx = int(filename.split('.')[0].split('_')[2])
       #true_captions = captions_index[image_idx]
       
       plot_image(full_fname, None, best_captions, j)
@@ -161,4 +161,4 @@ def main(_):
 
 if __name__ == "__main__":
   #tf.app.run()
-  main(None)
+  main(None) 
